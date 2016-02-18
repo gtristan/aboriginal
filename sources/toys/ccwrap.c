@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
     if (GET_FLAG(Cstdlib)) {
       if (GET_FLAG(CP)) {
         outv[outc++] = "-lstdc++";
-        //outv[outc++] = "-lm";
+	outv[outc++] = "-lm";
       }
 
       // libgcc can call libc which can call libgcc
