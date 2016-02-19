@@ -15,6 +15,7 @@
 # HDBMEGS - Size (in decimal megabytes) when creating hdb.img
 # HDC - Image file to use for -hdc on /mnt (none of blank)
 # QEMU_MEMORY - number of megabytes of memory for qemu (defaults to 256)
+# BUILD_PAUSE - number of seconds to wait before running a build (defaults to 3)
 
 INCLUDE unique-port.sh
 INCLUDE make-hdb.sh
@@ -122,6 +123,9 @@ fi
 
 [ -z "$CPUS" ] && CPUS=1
 KERNEL_EXTRA="CPUS=$CPUS $KERNEL_EXTRA"
+
+[ -z "$BUILD_PAUSE" ] && BUILD_PAUSE=3
+KERNEL_EXTRA="BUILD_PAUSE=$BUILD_PAUSE $KERNEL_EXTRA"
 
 # Kill our child processes on exit.
 

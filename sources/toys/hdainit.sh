@@ -13,10 +13,16 @@ fi
 
 if [ -e /mnt/init ]
 then
-  X=xx
-  echo "Press any key for command line..."
-  read -t 3 -n 1 X
-  if [ "$X" == xx ]
+  DO_HANDOFF="yes"
+  if [ $BUILD_PAUSE -gt 0 ]
+  then
+    X=xx
+    echo "Press any key for command line..."
+    read -t $BUILD_PAUSE -n 1 X
+    [ "$X" != xx ] && DO_HANDOFF="no"
+  fi
+
+  if [ "$DO_HANDOFF" == "yes" ]
   then
     echo "Running automated build."
     HANDOFF=/mnt/init
