@@ -16,6 +16,7 @@
 # HDC - Image file to use for -hdc on /mnt (none of blank)
 # QEMU_MEMORY - number of megabytes of memory for qemu (defaults to 256)
 # BUILD_PAUSE - number of seconds to wait before running a build (defaults to 3)
+# NOCONSOLE - Specifies that the emulator should not attach the console
 
 INCLUDE unique-port.sh
 INCLUDE make-hdb.sh
