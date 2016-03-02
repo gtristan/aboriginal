@@ -17,6 +17,7 @@
 # QEMU_MEMORY - number of megabytes of memory for qemu (defaults to 256)
 # BUILD_PAUSE - number of seconds to wait before running a build (defaults to 3)
 # NOCONSOLE - Specifies that the emulator should not attach the console
+# DISTCC_LOG - Specifies where the distccd log output should be written
 
 INCLUDE unique-port.sh
 INCLUDE make-hdb.sh
@@ -105,9 +106,10 @@ else
     # CPUS=$(($(echo /sys/devices/system/cpu/cpu[0-9]* | wc -w)*2))
     CPUS=3
   fi
+  [ -z "$DISTCC_LOG" ] && DISTCC_LOG=distccd.log
   PATH="$(pwd)/distcc_links" "$(which distccd)" --no-detach --daemon \
     --listen 127.0.0.1 -a 127.0.0.1 -p $PORT --jobs $CPUS \
-    --log-stderr --verbose 2>distccd.log &
+    --log-stderr --verbose 2>$DISTCC_LOG &
 
   DISTCC_PID="$(jobs -p)"
   # Clean up afterwards: Kill child processes we started (I.E. distccd).
