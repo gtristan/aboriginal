@@ -23,6 +23,16 @@
 #define DYNAMIC_LINKER "/lib/libc.so"
 #endif
 
+#ifndef FALSE
+# define FALSE 0
+#endif
+#ifndef TRUE
+# define TRUE (!FALSE)
+#endif
+#ifndef NULL
+# define NULL 0
+#endif
+
 // Some plumbing from toybox
 
 void *xmalloc(long len)
@@ -68,39 +78,78 @@ int is_file(char *filename, int has_exe)
     struct stat st;
 
     // Confirm it exists and is not a directory.
-    if (!stat(filename, &st) && S_ISREG(st.st_mode)) return 1;
+    if (!stat(filename, &st) && S_ISREG(st.st_mode)) return TRUE;
   }
-  return 0;
+  return FALSE;
 }
 
-// Find a file in a colon-separated path
-char *find_in_path(char *path, char *filename, int has_exe)
+// The PathCallback returns TRUE if the search should continue
+typedef int  (*PathCallback) (const char *element, size_t len, void *user_data);
+
+// Call the callback for each element in a colon-separated path, passing user_data
+// to the callback.
+//
+// Note that the element passed to PathCallback is not null terminated
+void foreach_element_in_path(char *path, PathCallback callback, void *user_data)
 {
-  char *cwd;
-
-  if (index(filename, '/') && is_file(filename, has_exe))
-    return strdup(filename);
-
-  if (!path || !(cwd = getcwd(0, 0))) return 0;
   while (path) {
-    char *str, *next = index(path, ':');
-    int len = next ? next-path : strlen(path);
+    char *next = index(path, ':');
+    size_t len = next ? next-path : strlen(path);
 
-    if (!len) str = xmprintf("%s/%s", cwd, filename);
-    else str = xmprintf("%.*s/%s", len, path, filename);
-
-    // If it's not a directory, return it.
-    if (is_file(str, has_exe)) {
-      free(cwd);
-      return str;
-    } else free(str);
+    if (!callback (path, len, user_data))
+      break;
 
     if (next) next++;
     path = next;
   }
-  free(cwd);
+}
 
-  return 0;
+// Find a file in a colon-separated path
+typedef struct {
+  const char *filename;
+  char *cwd;
+  int has_exe;
+  char *result;
+} FindInPathData;
+
+int find_in_path_cb(const char *element, size_t len, void *user_data)
+{
+  FindInPathData *data = (FindInPathData *)user_data;
+  int width = len; // We need an int for the '%.*s' format
+  char *str;
+
+  // Try the current working directory if we encounter a zero length path element
+  if (!len)
+    str = xmprintf("%s/%s", data->cwd, data->filename);
+  else
+    str = xmprintf("%.*s/%s", width, element, data->filename);
+
+  // If it's not a directory, return it.
+  if (is_file(str, data->has_exe)) {
+    data->result = str;
+    return FALSE;
+  } else {
+    free(str);
+  }
+
+  // Continue search
+  return TRUE;
+}
+
+char *find_in_path(char *path, char *filename, int has_exe)
+{
+  FindInPathData find_data = { filename, 0, has_exe };
+
+  if (index(filename, '/') && is_file(filename, has_exe))
+    return strdup(filename);
+
+  if (!path || !(find_data.cwd = getcwd(0, 0)))
+    return NULL;
+
+  foreach_element_in_path(path, find_in_path_cb, &find_data);
+  free(find_data.cwd);
+
+  return find_data.result;
 }
 
 struct dlist {
@@ -141,6 +190,20 @@ char *find_TSpath(char *base, char *top, int use_shared, int use_static_linking)
   return temp;
 }
 
+int add_extra_libs_cb(const char *element, size_t len, void *user_data)
+{
+  struct dlist **libs = (struct dlist **)user_data;
+
+  if (len) {
+    char *path = xmalloc ((len+1) * sizeof(char));
+
+    strncpy (path, element, len);
+    path[len] = '\0';
+    dlist_add(libs, path);
+  }
+
+  return TRUE;
+}
 
 enum {
   Clibccso, Clink, Cprofile, Cshared, Cstart, Cstatic, Cstdinc, Cstdlib,
@@ -280,6 +343,11 @@ int main(int argc, char *argv[])
   // Fallback library search path, these will wind up at the end
   dlist_add(&libs, xmprintf("%s/lib", topdir));
   dlist_add(&libs, xmprintf("%s/cc/lib", topdir));
+
+  // Add any extra library search paths
+  temp = getenv("CCWRAP_EXTRA_LIBDIRS");
+  if (temp)
+    foreach_element_in_path(temp, add_extra_libs_cb, &libs);
 
   // Parse command line arguments
   for (i=1; i<argc; i++) {
