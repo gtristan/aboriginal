@@ -518,6 +518,24 @@ int main(int argc, char *argv[])
       outv[outc++] = xmprintf("%s/cc/include", topdir);
       outv[outc++] = "-isystem";
       outv[outc++] = xmprintf("%s/cc/lib/include-fixed", topdir);
+
+      // Here, the gcc compiler is normally compiled against a libc
+      // and wants to have intimate knowledge of that libc (gcc calls
+      // this a targetcm.c_preinclude()).
+      //
+      // For some of the more eccentric variants of libc, such as the
+      // glibc libc (GNU libc) gcc hard codes itself an include of
+      // stdc-predef.h for compilation of any files excepting the
+      // -nostdinc case.
+      //
+      // Since our ccwrap compiler does not know what variant of libc
+      // you might choose to compile against, it allows you to define
+      // such a predefs file yourself via the CCWRAP_PREDEF.
+      temp = getenv("CCWRAP_PREDEF");
+      if (temp) {
+	outv[outc++] = "-include";
+	outv[outc++] = strdup(temp);
+      }
     }
   }
 
