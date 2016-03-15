@@ -207,7 +207,7 @@ int add_extra_libs_cb(const char *element, size_t len, void *user_data)
 
 enum {
   Clibccso, Clink, Cprofile, Cshared, Cstart, Cstatic, Cstdinc, Cstdlib,
-  Cverbose, Cx, Cdashdash, Cmelf,
+  Cverbose, Cx, Cdashdash, Cmelf, Cpthread,
 
   CPctordtor, CP, CPstdinc
 };
@@ -456,7 +456,14 @@ int main(int argc, char *argv[])
         printf("\n");
 
         return 0;
-      } else if (!strcmp(c, "pg")) SET_FLAG(Cprofile);
+      } else if (!strcmp(c, "pg")) {
+	SET_FLAG(Cprofile);
+      } else if (!strcmp(c, "pthread")) {
+	// Here we do not discard -pthread from the kept flags, we
+	// want it to define things like -D_REENTRANT at the preprocessor
+	// stage and it's harmless in the link stage
+        SET_FLAG(Cpthread);
+      }
     } else if (*c == 's') {
       keepc--;
       if (!strcmp(c, "shared")) {
@@ -551,6 +558,11 @@ int main(int argc, char *argv[])
         outv[outc++] = "-lstdc++";
 	outv[outc++] = "-lm";
       }
+
+      // Need to add -lpthread manually if -pthread
+      // was specified, since we use -nostdlib manually
+      if (GET_FLAG(Cpthread))
+	outv[outc++] = "-lpthread";
 
       // libgcc can call libc which can call libgcc
       outv[outc++] = "-Wl,--start-group,--as-needed";
