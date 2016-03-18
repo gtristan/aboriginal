@@ -125,6 +125,12 @@ mv "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}gcc" "$STAGE_DIR/tools/bin/cc" &&
 ln -sf "${TOOLCHAIN_PREFIX}cc" "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}gcc" &&
 ln -s cc "$STAGE_DIR/tools/bin/rawcc" &&
 
+# Wrap cpp also
+
+mv "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}cpp" "$STAGE_DIR/tools/bin/cpp" &&
+ln -sf "${TOOLCHAIN_PREFIX}cc" "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}cpp" &&
+ln -s cpp "$STAGE_DIR/tools/bin/rawcpp" || dienow
+
 # Wrap C++ too.
 
 if [ -z "$NO_CPLUSPLUS" ]
