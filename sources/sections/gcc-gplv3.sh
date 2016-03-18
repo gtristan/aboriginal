@@ -160,7 +160,37 @@ then
     ln -s libgcc.a "$STAGE_DIR/cc/lib/libgcc_eh.a"
   fi
 
-  # Prepare for ccwrap
+  # Prepare for ccwrap:
+  #
+  #  o The ccwrap frontend is installed as ${STAGE_DIR}/bin/${TOOLCHAIN_PREFIX}cc
+  #
+  #  o Compiler tools which ccwrap wraps, are installed as symlinks in ${STAGE_DIR}/bin,
+  #    all linking to ccwrap. In ${STAGE_DIR}/bin there should be the following links:
+  #      gcc -> cc
+  #      g++ -> cc
+  #      c++ -> cc
+  #      cpp -> cc
+  #
+  #    When it's a cross compiler, the above are prefixed with ${TOOLCHAIN_PREFIX}, so
+  #    it may instead look like:
+  #      armv5l-gcc -> armv5l-cc
+  #      armv5l-g++ -> armv5l-cc
+  #      armv5l-c++ -> armv5l-cc
+  #      armv5l-cpp -> armv5l-cc
+  #
+  #  o The real compiler tools are installed at ${STAGE_DIR}/tools/bin, as cc, c++ and cpp
+  #
+  #  o Symlinks in ${STAGE_DIR}/tools/bin are created with the 'raw' prefix, such that
+  #    the following links would exist in ${STAGE_DIR}/tools/bin:
+  #      rawcc -> cc
+  #      raw++ -> c++
+  #      rawcpp -> cpp
+  #
+  #  o When ${STAGE_DIR}/bin/cc (the wrapper) is called, it will fix the include and
+  #    link paths appropriately so that the compiler is relocatable, the ccwrap frontend
+  #    will call out exclusively to the 'raw' prefixed links in the $STAGE_DIR/tools/bin
+  #    directory.
+  #
   mv "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}gcc" "$STAGE_DIR/tools/bin/cc" &&
   ln -sf "${TOOLCHAIN_PREFIX}cc" "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}gcc" &&
   ln -s cc "$STAGE_DIR/tools/bin/rawcc" &&
@@ -169,7 +199,12 @@ then
   mv "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}g++" "$STAGE_DIR/tools/bin/c++" &&
   ln -sf "${TOOLCHAIN_PREFIX}cc" "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}g++" &&
   ln -sf "${TOOLCHAIN_PREFIX}cc" "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}c++" &&
-  ln -s c++ "$STAGE_DIR/tools/bin/raw++" || dienow
+  ln -s c++ "$STAGE_DIR/tools/bin/raw++" &&
+
+  # Wrap cpp also
+  mv "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}cpp" "$STAGE_DIR/tools/bin/cpp" &&
+  ln -sf "${TOOLCHAIN_PREFIX}cc" "$STAGE_DIR/bin/${TOOLCHAIN_PREFIX}cpp" &&
+  ln -s cpp "$STAGE_DIR/tools/bin/rawcpp" || dienow
 
   # Make sure "tools" has everything distccd needs.
   cd "$STAGE_DIR/tools" || dienow
