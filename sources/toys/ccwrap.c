@@ -207,7 +207,7 @@ int add_extra_libs_cb(const char *element, size_t len, void *user_data)
 
 enum {
   Clibccso, Clink, Cprofile, Cshared, Cstart, Cstatic, Cstdinc, Cstdlib,
-  Cverbose, Cx, Cdashdash, Cmelf, Cpthread,
+  Cverbose, Cx, Cdashdash, Cmelf, Cpthread, Cpreprocess,
 
   CPctordtor, CP, CPstdinc
 };
@@ -253,7 +253,9 @@ int main(int argc, char *argv[])
   } else if (!strcmp("gcc", ccprefix+i-3)) i -= 3;   // TODO: yank
   else if (!strcmp("cc", ccprefix+i-2)) i-=2;
   else if (!strcmp("cpp", ccprefix+i-3)) {
+    cc = "rawcpp";
     i -= 3;
+    SET_FLAG(Cpreprocess);
     CLEAR_FLAG(Clink);
   } else return 1; // TODO: wrap ld
   if (!(ccprefix = strndup(ccprefix, (size_t)i))) exit(1); // todo: fix uclibc
@@ -499,8 +501,8 @@ int main(int argc, char *argv[])
   outc = 0;
   outv[outc++] = cc;
 
-  // Rewrite header paths (if compiling)
-  if (srcfiles) {
+  // Rewrite header paths (if compiling or preprocessing)
+  if (srcfiles || GET_FLAG(Cpreprocess)) {
     outv[outc++] = "-nostdinc";
     if (GET_FLAG(CP)) {
       outv[outc++] = "-nostdinc++";
