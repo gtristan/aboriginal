@@ -109,7 +109,8 @@ else
     ac_cv_path_AS_FOR_TARGET="${CC_PREFIX}as" \
     ac_cv_path_LD_FOR_TARGET="${CC_PREFIX}ld" \
     configure_gcc --enable-threads=posix $X \
-      --build="$CROSS_HOST" --host="${CROSS_TARGET/unknown-elf/walrus-elf}" --enable-languages=c,c++
+      --build="$CROSS_HOST" --host="${CROSS_TARGET/unknown-elf/walrus-elf}" --enable-languages=c,c++ \
+      --with-native-system-header-dir=$STAGE_DIR/include
 fi
 
 # Now that it's configured, build and install gcc
