@@ -87,8 +87,8 @@ else
   maybe_fork "download || dienow"
 
   # MPFR Required to build GCC 5.3 (We're using latest version)
-  URL=http://www.mpfr.org/mpfr-current/mpfr-3.1.3.tar.bz2 \
-  SHA1=3e46c5ce43701f2f36f9d01f407efe081700da80 \
+  URL=http://www.mpfr.org/mpfr-current/mpfr-3.1.4.tar.bz2 \
+  SHA1=e3b0af77f18505184410d621fe0aae179e229dba \
   maybe_fork "download || dienow"
 fi
 
